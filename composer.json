@@ -1,0 +1,17 @@
+{
+  "name": "simone/family-board",
+  "require": {
+    "sabre/vobject": "^4.1",
+    "ext-json": "*",
+    "vlucas/phpdotenv": "^2.5"
+  },
+  "authors": [
+    {
+      "name": "Simone Cabrino",
+      "email": "cabrinosimone@gmail.com"
+    }
+  ],
+  "autoload": {
+    "files": ["src/config.php"]
+  }
+}

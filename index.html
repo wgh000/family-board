@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Family Board</title>
+    <style type="text/css">
+        body, html {
+            height: 100%;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        #app {
+            background-position: center center;
+            background-size: cover;
+        }
+
+        .block {
+            padding: 1em;
+        }
+
+        .block-light {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .block-darker {
+            background: rgba(125, 125, 125, 0.5);
+        }
+
+        .block-darkest {
+            background: rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+<div id="app" class="container-fluid h-100" v-bind:style="{ backgroundImage: 'url(' + background + ')' }">
+    <div class="row h-100">
+        <div class="col-3">
+            <div class="block block-light h-50">
+                <h4 class="mb-3">
+                    {{ days[today.getDay()] + ' ' + today.getDate() }}
+                    <div class="float-right">
+                        <i class="fas mr-1" :class="todayWeather.weather"></i>
+                        <span class="small">{{ todayWeather.min }}º / {{ todayWeather.max }}º</span>
+                    </div>
+                </h4>
+                <table class="table">
+                    <tr v-for="event in todayEvents">
+                        <th>{{ event.time }}</th>
+                        <td>{{ event.summary }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="block block-darker text-white h-25">
+                <h4 class="mb-3">
+                    {{ days[tomorrow.getDay()] + ' ' + tomorrow.getDate() }}
+                    <div class="float-right">
+                        <i class="fas mr-1" :class="tomorrowWeather.weather"></i>
+                        <span class="small">{{ tomorrowWeather.min }}º / {{ tomorrowWeather.max }}º</span>
+                    </div>
+                </h4>
+                <table class="table table-sm">
+                    <tr v-for="event in tomorrowEvents">
+                        <th>{{ event.time }}</th>
+                        <td>{{ event.summary }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="block block-darkest text-white h-25">
+                <h4 class="mb-3">
+                    {{ days[afterTomorrow.getDay()] + ' ' + afterTomorrow.getDate() }}
+                    <div class="float-right">
+                        <i class="fas mr-1" :class="afterTomorrowWeather.weather"></i>
+                        <span class="small">{{ afterTomorrowWeather.min }}º / {{ afterTomorrowWeather.max }}º</span>
+                    </div>
+                </h4>
+                <table class="table table-sm">
+                    <tr v-for="event in afterTomorrowEvents">
+                        <th>{{ event.time }}</th>
+                        <td>{{ event.summary }}</td>
+                    </tr>
+                </table>
+                <!-- <i class="fas fa-snowflake"></i> -->
+            </div>
+        </div>
+        <div class="col-9 h-100">
+            <div class="row h-100">
+                <div class="col-12"></div>
+                <div class="col-12 align-self-end pb-1 small text-center"
+                     v-bind:class="{ 'text-white': imageIsDark }" v-html="description"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.1/css/bootstrap.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/solid.css"
+      integrity="sha384-VGP9aw4WtGH/uPAOseYxZ+Vz/vaTb1ehm1bwx92Fm8dTrE+3boLfF1SpAtB1z7HW" crossorigin="anonymous">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/fontawesome.css"
+      integrity="sha384-1rquJLNOM3ijoueaaeS5m+McXPJCGdr5HcA03/VHXxcp2kX2sUrQDmFc3jR5i/C7" crossorigin="anonymous">
+
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"
+        crossorigin="anonymous"></script>
+
+<script>
+    let days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+
+    let dataURL = 'scripts/background.php';
+    let calendarURL = 'scripts/calendar.php';
+    let weatherURL = 'scripts/weather.php';
+
+    let app = new Vue({
+        el: '#app',
+        data: {
+            background: '',
+            description: '',
+            imageIsDark: false,
+            today: new Date(),
+            tomorrow: '',
+            afterTomorrow: '',
+            todayEvents: [],
+            tomorrowEvents: [],
+            afterTomorrowEvents: [],
+            todayWeather: {},
+            tomorrowWeather: {},
+            afterTomorrowWeather: {},
+        },
+        mounted() {
+            this.today = new Date();
+            this.tomorrow = new Date(this.today.getTime() + (24 * 60 * 60 * 1000));
+            this.afterTomorrow = new Date(this.tomorrow.getTime() + (24 * 60 * 60 * 1000));
+
+            this.fetchBackground();
+            this.fetchCalendar();
+            this.fetchWeather();
+
+            this.startInterval();
+        },
+        methods: {
+            fetchBackground: function () {
+                fetch(dataURL).then(res => res.json()).then(res => {
+                    if (res.images) {
+                        this.background = 'https://www.bing.com' + res.images[0].url;
+                        this.description = res.images[0].title + ' <br> ' + res.images[0].copyright;
+                        this.imageIsDark = res.images[0].drk === 1;
+                    }
+                });
+            },
+            fetchCalendar: function () {
+                fetch(calendarURL).then(res => res.json()).then(res => {
+                    this.todayEvents = res.today;
+                    this.tomorrowEvents = res.tomorrow;
+                    this.afterTomorrowEvents = res.afterTomorrow;
+                });
+            },
+            fetchWeather: function () {
+                fetch(weatherURL).then(res => res.json()).then(res => {
+                    this.todayWeather = res.today;
+                    this.tomorrowWeather = res.tomorrow;
+                    this.afterTomorrowWeather = res.afterTomorrow;
+                });
+            },
+            startInterval: function () {
+                setInterval(function () {
+                    this.fetchBackground();
+                    this.fetchCalendar();
+                }.bind(this), 6000000); // 10 minutes
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
